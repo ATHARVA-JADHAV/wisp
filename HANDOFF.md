@@ -1,7 +1,16 @@
 # HANDOFF — Wisp (embeddable AI support widget)
 
 > For the next Claude session (or future me). Read this + `PROJECT.md` and you can resume immediately.
-> Last updated: 2026-07-12.
+> Last updated: 2026-07-13.
+
+## ⚡ LIVE IN PRODUCTION: https://wisp-brown.vercel.app
+
+Deployed via Vercel CLI (project `wisp`, team `atharvas-projects-cd499504`, user `atharva-jadhav1`). All env vars set on Vercel production incl. `NEXT_PUBLIC_APP_URL=https://wisp-brown.vercel.app`. Prod smoke-tested: landing 200, widget.js 200, widget-config OK, streamed RAG chat OK. Deploy again with `vercel --prod --yes` from `wisp/`.
+
+**⚠ PENDING USER ACTION:** visitor grouping shipped a new column — user must run this in Supabase SQL Editor or conversation logging silently breaks (chat still answers, but nothing is logged):
+```sql
+alter table conversations add column if not exists visitor_id text;
+```
 
 ## What this is
 
@@ -18,10 +27,11 @@
 
 ## Immediate next steps (in order)
 
-1. **User does a manual pass**: sign up in the UI → create a real project → index his portfolio/docs → play with the widget → check dashboard tabs fill up. (The scripted e2e passed; human pass pending.)
-2. Test the widget on a real external page (plain HTML file with the script tag pointing at `localhost:3000/widget.js`).
-3. Deploy to Vercel (set all envs + `NEXT_PUBLIC_APP_URL=<prod url>`). Then dogfood: add the widget to his portfolio site (`BS1/portfolio`) and Influencer Shop.
-4. Later: GitHub repo + polished README screenshots/GIF, resume bullet, maybe a `@wisp/react` npm wrapper (extra resume line).
+1. **User runs the visitor_id ALTER above** (blocker for conversation logging).
+2. User finishes his manual pass on production: sign up at wisp-brown.vercel.app → index a PUBLIC site (his vercel.com dashboard crawl produced 9 junk "Login – Vercel" sources — a login-page guard now rejects those; he should delete the junk sources) → chat → check tabs.
+3. Test the widget on an external HTML file using the PRODUCTION snippet (`https://wisp-brown.vercel.app/widget.js`).
+4. Dogfood: add the widget to his portfolio site (`BS1/portfolio`) and Influencer Shop.
+5. GitHub repo + polished README screenshots/GIF, resume bullet, maybe a `@wisp/react` npm wrapper (extra resume line).
 5. Scaling roadmap discussed with user (not yet built, in rough priority): public "chat with any URL" playground; job queue for ingestion (pg_cron/Inngest); Upstash Redis rate limiting + usage metering; answer caching by question hash; human handoff (email capture on unanswered); hybrid search (pgvector + FTS); thumbs up/down feedback; auto re-crawl; AI-suggested FAQ drafts from unanswered clusters; `@wisp/react-native` WebView wrapper (mobile tier 2 — tier 1 = plain WebView of `/embed/<key>`, works today, just needs docs).
 
 ## What's built (file map)
@@ -36,7 +46,7 @@
 | Gemini client | `src/lib/gemini.ts` | **Model fallback chain** (env `GEMINI_CHAT_MODEL` → `gemini-3.1-flash-lite` → `flash-lite-latest` → `flash-latest` → `2.5-flash`), rotates on 404/quota. NOTE: fresh accounts get 404 "no longer available to new users" on 2.5-flash — that's why the chain exists. `thinkingBudget: 0` applied to 2.x models only. `gemini-embedding-001` @768 dims **re-normalized**. Comma-separated key rotation on 429. |
 | Chunking / crawling | `src/lib/chunk.ts`, `src/lib/crawl.ts` | ~1800 chars, paragraph boundaries, 1-para overlap, title prefix. Crawler is regex-based html→text, same-origin links, no deps. |
 | Supabase | `src/lib/supabase/{client,server,admin}.ts`, `supabase/schema.sql` | Tables: projects (public_key `prj_…`), sources, chunks (vector(768), HNSW), conversations, messages (grounded flag). RLS owner-scoped; chunks service-role-only; `match_chunks` RPC. No middleware — client-side auth guards. |
-| Dashboard | `src/app/dashboard/page.tsx`, `src/app/dashboard/[id]/page.tsx` | Projects grid + create; project page tabs: Overview (stat tiles), Sources (URL/text/crawl-picker), Conversations (expandable transcripts, amber = ungrounded), Unanswered, Widget (settings + snippet + live preview iframe). All client components, RLS via browser client. |
+| Dashboard | `src/app/dashboard/page.tsx`, `src/app/dashboard/[id]/page.tsx` | Projects grid + create; project page tabs: Overview (stat tiles), Sources (URL/text/crawl-picker + login-page guard), Conversations (**grouped by anonymous visitor** — widget stores `wisp_vid` in localStorage, sent as `visitorId`, stored on conversations.visitor_id; expandable transcripts, amber = ungrounded), Unanswered, Widget (settings + snippet + **live preview** — unsaved drafts passed via `pbot/pgreet/paccent` query params, debounced 450ms). All client components, RLS via browser client. |
 | Auth | `src/app/login/page.tsx` | Email+password sign in/up. Handles email-confirmation case with a notice. |
 | Landing | `src/app/page.tsx` | See design notes below. Demo widget loaded via `<Script src="/widget.js" data-project="demo">`. |
 | Shell/notices | `src/components/{DashboardShell,EnvNotice}.tsx` | |

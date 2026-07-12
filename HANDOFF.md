@@ -32,7 +32,15 @@ alter table conversations add column if not exists visitor_id text;
 3. Test the widget on an external HTML file using the PRODUCTION snippet (`https://wisp-brown.vercel.app/widget.js`).
 4. Dogfood: add the widget to his portfolio site (`BS1/portfolio`) and Influencer Shop.
 5. GitHub repo + polished README screenshots/GIF, resume bullet, maybe a `@wisp/react` npm wrapper (extra resume line).
-5. Scaling roadmap discussed with user (not yet built, in rough priority): public "chat with any URL" playground; job queue for ingestion (pg_cron/Inngest); Upstash Redis rate limiting + usage metering; answer caching by question hash; human handoff (email capture on unanswered); hybrid search (pgvector + FTS); thumbs up/down feedback; auto re-crawl; AI-suggested FAQ drafts from unanswered clusters; `@wisp/react-native` WebView wrapper (mobile tier 2 — tier 1 = plain WebView of `/embed/<key>`, works today, just needs docs).
+5. **Near-term improvement list (agreed with user, in priority order):**
+   1. Project management basics — rename/delete project buttons, re-index button on a source (currently delete + re-add)
+   2. Public playground — "paste any URL, chat with it in 30s" on the landing, no signup (best growth lever; throwaway index)
+   3. Email capture on unanswered — "leave your email, the team will reply" → leads inbox; pairs with the Unanswered tab
+   4. Sources cited in answers — "from: FAQ" chips under bot replies (retrieval data already exists in /api/chat)
+   5. Serverless-proof rate limiting + usage metering — Upstash Redis; in-memory limiter resets on Vercel cold starts
+   6. Better crawler — sitemap.xml support; detect JS-rendered SPAs and show a helpful error instead of thin content
+   7. Polish — relative timestamps ("2h ago"), conversation search, favicon + OG image for link sharing
+6. Bigger scaling roadmap (discussed, unprioritized): job queue for ingestion (pg_cron/Inngest); answer caching by question hash; hybrid search (pgvector + FTS); thumbs up/down feedback loop; auto re-crawl; AI-suggested FAQ drafts from unanswered clusters; identify API for logged-in users (`wisp("identify", {email})`); `@wisp/react-native` WebView wrapper (mobile tier 2 — tier 1 = plain WebView of `/embed/<key>`, works today, just needs docs).
 
 ## What's built (file map)
 

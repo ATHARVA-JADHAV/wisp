@@ -10,7 +10,20 @@ Full product/architecture spec: [PROJECT.md](./PROJECT.md)
 
 ## Stack
 
-Next.js 16 (App Router, Turbopack) · React 19 · Tailwind 4 · Framer Motion · Supabase (auth + Postgres + **pgvector**) · Gemini (`gemini-2.5-flash` chat, `gemini-embedding-001` embeddings)
+Next.js 16 (App Router, Turbopack) · React 19 · Tailwind 4 · Framer Motion · Supabase (auth + Postgres + **pgvector**) · Gemini (`gemini-embedding-001` embeddings at 768 dims; chat runs a model fallback chain starting at `gemini-3.1-flash-lite` — see `src/lib/gemini.ts`)
+
+## How it works
+
+Content in → chunks → 768-dim embeddings → pgvector. A question in → embed the
+question → cosine-similarity search for the top 5 chunks over **that project
+only** → drop anything below 0.35 similarity → build a system prompt that
+permits nothing outside that context → stream the answer back as plain text.
+
+When the model can't answer from the content it emits a sentinel token, which
+the server strips before the visitor sees it and records as `grounded = false`
+on the message row. Every one of those becomes a line in the owner's
+**Unanswered** report — which is the actual product: a list of the questions
+your documentation fails to answer.
 
 ## Setup
 
@@ -25,6 +38,14 @@ Next.js 16 (App Router, Turbopack) · React 19 · Tailwind 4 · Framer Motion ·
    - Project Settings → API → copy the **bare** project URL (`https://xxxx.supabase.co`), the anon key, and the service_role key into `.env.local`
    - SQL Editor → paste and run [`supabase/schema.sql`](./supabase/schema.sql) (enables pgvector, creates tables + RLS + the `match_chunks` RPC)
    - For local dev, optionally turn off email confirmation: Authentication → Providers → Email → disable "Confirm email"
+
+   > **Upgrading an existing database** created before visitor grouping shipped?
+   > `schema.sql` is idempotent so re-running it is safe, but the one column it
+   > cannot add retroactively is on `conversations`. Run this once:
+   > ```sql
+   > alter table conversations add column if not exists visitor_id text;
+   > ```
+   > Without it chat still answers, but nothing is logged to the dashboard.
 
 3. **Gemini** (free tier)
    - Get a key at [aistudio.google.com](https://aistudio.google.com)

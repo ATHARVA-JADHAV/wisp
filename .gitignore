@@ -42,3 +42,5 @@ next-env.d.ts
 
 .vercel
 .env*
+# ...but the template belongs in the repo — it is how anyone sets this up.
+!.env.example

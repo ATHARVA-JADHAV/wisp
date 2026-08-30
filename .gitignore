@@ -43,4 +43,6 @@ next-env.d.ts
 .vercel
 .env*
 # ...but the template belongs in the repo — it is how anyone sets this up.
+# NOTE: this negation must stay LAST. `vercel env pull` appends a bare `.env*`
+# rule when it runs; if that lands below this line it re-ignores the template.
 !.env.example

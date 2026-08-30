@@ -13,7 +13,14 @@ export const dynamic = "force-dynamic";
  * GET /api/health -> 200 { ok: true }  when the database answers
  *                    503 { ok: false } with the failing check named
  *
- * Point an uptime monitor at this and it will page you the day it breaks.
+ * A daily Vercel cron hits this (see vercel.json), which does double duty: the
+ * query counts as API activity, so Supabase's free tier never idles the project
+ * into a pause — which is what took Wisp down for weeks — and a failing check
+ * shows up as a failed cron run instead of silence.
+ *
+ * Deliberately public and unauthenticated: it performs one indexed COUNT that
+ * returns no rows, reveals nothing beyond up/down, and being reachable without
+ * a secret is the point of a health check.
  */
 export async function GET() {
   const checks: Record<string, { ok: boolean; detail?: string }> = {};

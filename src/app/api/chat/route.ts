@@ -149,11 +149,20 @@ export async function POST(req: NextRequest) {
 
   // ── Real project ───────────────────────────────────────────────────────────
   const db = supabaseAdmin();
-  const { data: project } = await db
+  const { data: project, error: projectError } = await db
     .from("projects")
     .select("id, name, bot_name")
     .eq("public_key", projectKey)
     .single();
+
+  // PGRST116 means "no row matched" — a genuinely unknown key, which is a 404.
+  // ANY other error is infrastructure. Checking only `data` makes an unreachable
+  // database indistinguishable from a bad key, and that is exactly how a deleted
+  // Supabase project went unnoticed for weeks: every request returned a tidy 404.
+  if (projectError && projectError.code !== "PGRST116") {
+    console.error("chat: project lookup failed —", projectError.message);
+    return Response.json({ error: "backend unavailable" }, { status: 503 });
+  }
   if (!project) return Response.json({ error: "unknown project" }, { status: 404 });
 
   // retrieval: embed the question, cosine-match this project's chunks only
